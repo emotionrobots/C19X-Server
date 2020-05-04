@@ -1,0 +1,12 @@
+{
+"active":"true",
+"signalStrengthThreshold":"-77.46",
+"exposureDurationThreshold":"900000",
+"beaconReceiverOnDuration":"15000",
+"governmentAdvice":"1",
+"contactDurationThreshold":"300000",
+"serverAddress":"https://appserver-test.c19x.org",
+"beaconReceiverOffDuration":"10000",
+"retentionPeriod":"14"
+}
+
