@@ -19,6 +19,7 @@ import org.c19x.server.handler.ParametersHandler;
 import org.c19x.server.handler.RegistrationHandler;
 import org.c19x.server.handler.StatusHandler;
 import org.c19x.server.handler.TimeHandler;
+import org.c19x.server.handler.WebHandler;
 import org.c19x.util.FileUtil;
 import org.c19x.util.Logger;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -125,6 +126,7 @@ public class C19XHttpsServer {
 		final File keystorePasswordFile = new File(args[2]);
 		final File parametersFile = new File(args[3]);
 		final File databaseFolder = new File(args[4]);
+		final File webFolder = new File(args[5]);
 
 		final Devices devices = new Devices(databaseFolder);
 		final Parameters parameters = new Parameters();
@@ -132,6 +134,7 @@ public class C19XHttpsServer {
 		final C19XHttpsServer server = new C19XHttpsServer(port, p12KeystoreFile, keystorePasswordFile);
 		final ParametersHandler parametersHandler = new ParametersHandler();
 		final LookupHandler lookupHandler = new LookupHandler();
+		server.getHandlers().put("", new WebHandler(webFolder));
 		server.getHandlers().put("time", new TimeHandler());
 		server.getHandlers().put("registration", new RegistrationHandler(devices));
 		server.getHandlers().put("status", new StatusHandler(devices));
