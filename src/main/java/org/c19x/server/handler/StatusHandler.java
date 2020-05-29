@@ -30,8 +30,9 @@ public class StatusHandler extends AbstractHandler {
 			final byte[] sharedSecret = devices.getSharedSecret(key);
 			if (sharedSecret != null) {
 				final String decrypted = SecurityUtil.decrypt(sharedSecret, value);
-				final String timeWindow = decrypted.substring(0, decrypted.indexOf(','));
-				final String status = decrypted.substring(timeWindow.length() + 1);
+				final String[] fields = decrypted.split("\\|");
+				final String timeWindow = fields[0];
+				final String status = fields[1];
 				if (Math.abs(Long.parseLong(timeWindow) - System.currentTimeMillis()) < 150000) {
 					devices.setStatus(key, status);
 					response.setStatus(HttpServletResponse.SC_OK);

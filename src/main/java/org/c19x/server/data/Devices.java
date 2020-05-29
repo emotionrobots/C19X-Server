@@ -22,7 +22,7 @@ public class Devices {
 	private final KeyValueStore registrations;
 	private final KeyValueStore statuses;
 	private final KeyValueStore messages;
-	private final Map<String, Codes> codes;
+	private final Map<String, DayCodes> codes;
 
 	public Devices(final File folder) {
 		parameters = new KeyValueStore(new File(folder, "parameters"));
@@ -37,7 +37,7 @@ public class Devices {
 		registrations.entries().parallelStream().forEach(e -> {
 			final String serialNumber = e.getKey();
 			final byte[] sharedSecret = Base64.getDecoder().decode(e.getValue());
-			final Codes c = new Codes(sharedSecret);
+			final DayCodes c = new DayCodes(sharedSecret);
 			codes.put(serialNumber, c);
 		});
 	}
@@ -63,6 +63,7 @@ public class Devices {
 			SecurityUtil.getSecureRandom().nextBytes(sharedSecret);
 			final String sharedSecretInBase64 = Base64.getEncoder().encodeToString(sharedSecret);
 			registrations.put(serialNumber, sharedSecretInBase64);
+			codes.put(serialNumber, new DayCodes(sharedSecret));
 			return serialNumber + "," + sharedSecretInBase64;
 		}
 	}
@@ -76,11 +77,11 @@ public class Devices {
 		}
 	}
 
-	public Codes getCodes(final String serialNumber) {
-		Codes c = codes.get(serialNumber);
+	public DayCodes getCodes(final String serialNumber) {
+		DayCodes c = codes.get(serialNumber);
 		if (c == null) {
 			final byte[] sharedSecret = getSharedSecret(serialNumber);
-			c = new Codes(sharedSecret);
+			c = new DayCodes(sharedSecret);
 			codes.put(serialNumber, c);
 		}
 		return c;

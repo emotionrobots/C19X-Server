@@ -6,7 +6,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
 import org.c19x.util.Logger;
-import org.c19x.util.SecurityUtil;
 
 public class Lookup {
 	private final static String tag = Lookup.class.getName();
@@ -38,20 +37,23 @@ public class Lookup {
 		final byte[] infectious = new byte[size];
 		// Fill lookup table with random data
 		Logger.debug(tag, "Filling lookup table with random data");
-		SecurityUtil.getSecureRandom().nextBytes(infectious);
+		// SecurityUtil.getSecureRandom().nextBytes(infectious);
 		// Fill lookup table with device data
 		Logger.debug(tag, "Filling lookup table with actual data");
 		devices.getSerialNumbers().forEach(serialNumber -> {
 			try {
 				final String status = devices.getStatus(serialNumber);
-				final boolean value = !status.equals("0");
-				final Codes codes = devices.getCodes(serialNumber);
+				final boolean value = (status != null && !status.equals("0"));
+				final DayCodes codes = devices.getCodes(serialNumber);
 				for (long code : codes.get(retention)) {
 					final int index = (int) Math.abs(code % range);
 					set(infectious, index, value);
+					if (value) {
+						Logger.debug(tag, "Infectious (serialNumber={},code={},index={})", serialNumber, code, index);
+					}
 				}
 			} catch (Throwable e) {
-				Logger.warn(tag, "Failed to set lookup values (serialNumber={})", serialNumber);
+				Logger.warn(tag, "Failed to set lookup values (serialNumber={})", serialNumber, e);
 			}
 		});
 		return infectious;

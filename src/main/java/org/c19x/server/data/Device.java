@@ -11,13 +11,13 @@ public class Device {
 	private final byte[] sharedSecret;
 	private int status = 0;
 	private String message = null;
-	private transient Codes codes;
+	private transient DayCodes codes;
 
 	public Device(long serialNumber, byte[] sharedSecret) {
 		super();
 		this.serialNumber = serialNumber;
 		this.sharedSecret = sharedSecret;
-		this.codes = new Codes(sharedSecret);
+		this.codes = new DayCodes(sharedSecret);
 	}
 
 	public int getStatus() {
@@ -45,7 +45,7 @@ public class Device {
 		this.message = message;
 	}
 
-	public Codes getCodes() {
+	public DayCodes getCodes() {
 		return codes;
 	}
 

@@ -31,8 +31,8 @@ public class RegistrationHandler extends AbstractHandler {
 			printWriter.print(registration);
 			printWriter.flush();
 			printWriter.close();
-			Logger.debug(tag, "Success (address={},serialNumber={})", request.getRemoteAddr(),
-					registration.split(",")[0]);
+			Logger.debug(tag, "Success (address={},serialNumber={},sharedSecret={})", request.getRemoteAddr(),
+					registration.split(",")[0], registration.split(",")[1]);
 		} catch (Throwable e) {
 			response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
 			Logger.warn(tag, "Failed", e);

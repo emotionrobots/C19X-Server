@@ -128,6 +128,11 @@ public class C19XHttpsServer {
 		final File databaseFolder = new File(args[4]);
 		final File webFolder = new File(args[5]);
 
+		// TEST ONLY
+		for (final File f : databaseFolder.listFiles()) {
+			f.delete();
+		}
+
 		final Devices devices = new Devices(databaseFolder);
 		final Parameters parameters = new Parameters();
 
@@ -156,7 +161,7 @@ public class C19XHttpsServer {
 				lookupHandler.set(lookup);
 				Logger.info(tag, "Updated lookup table");
 			}
-		}, 0, 5 * 60000);
+		}, 0, 10 * 60000);
 
 		server.start();
 	}
