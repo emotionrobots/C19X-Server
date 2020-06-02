@@ -33,7 +33,7 @@ public class Devices {
 		generateCodes();
 	}
 
-	private void generateCodes() {
+	protected void generateCodes() {
 		registrations.entries().parallelStream().forEach(e -> {
 			final String serialNumber = e.getKey();
 			final byte[] sharedSecret = Base64.getDecoder().decode(e.getValue());
@@ -42,7 +42,7 @@ public class Devices {
 		});
 	}
 
-	private String getSerialNumber() {
+	protected String getSerialNumber() {
 		synchronized (parameters) {
 			String value = parameters.get("serialNumber");
 			if (value == null) {
@@ -56,15 +56,19 @@ public class Devices {
 		}
 	}
 
+	protected String register(final String serialNumber, final byte[] sharedSecret) {
+		final String sharedSecretInBase64 = Base64.getEncoder().encodeToString(sharedSecret);
+		registrations.put(serialNumber, sharedSecretInBase64);
+		codes.put(serialNumber, new DayCodes(sharedSecret));
+		return serialNumber + "," + sharedSecretInBase64;
+	}
+
 	public String register() {
 		synchronized (registrations) {
 			final String serialNumber = getSerialNumber();
 			final byte[] sharedSecret = new byte[sharedSecretLength];
 			SecurityUtil.getSecureRandom().nextBytes(sharedSecret);
-			final String sharedSecretInBase64 = Base64.getEncoder().encodeToString(sharedSecret);
-			registrations.put(serialNumber, sharedSecretInBase64);
-			codes.put(serialNumber, new DayCodes(sharedSecret));
-			return serialNumber + "," + sharedSecretInBase64;
+			return register(serialNumber, sharedSecret);
 		}
 	}
 

@@ -1,12 +1,9 @@
 {
-"active":"true",
-"signalStrengthThreshold":"-77.46",
-"exposureDurationThreshold":"900000",
-"beaconReceiverOnDuration":"15000",
-"governmentAdvice":"1",
-"contactDurationThreshold":"300000",
-"serverAddress":"https://c19x-dev.servehttp.com/",
-"beaconReceiverOffDuration":"10000",
-"retentionPeriod":"14"
+"active":"true"
+"server":"https://c19x-dev.servehttp.com/",
+"retention":"14"
+"proximity":"-77",
+"exposure":"15",
+"advice":"1",
 }
 

@@ -11,9 +11,9 @@ import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 import org.c19x.server.data.Devices;
-import org.c19x.server.data.Lookup;
+import org.c19x.server.data.InfectionData;
 import org.c19x.server.data.Parameters;
-import org.c19x.server.handler.LookupHandler;
+import org.c19x.server.handler.InfectionDataHandler;
 import org.c19x.server.handler.MessageHandler;
 import org.c19x.server.handler.ParametersHandler;
 import org.c19x.server.handler.RegistrationHandler;
@@ -129,22 +129,22 @@ public class C19XHttpsServer {
 		final File webFolder = new File(args[5]);
 
 		// TEST ONLY
-		for (final File f : databaseFolder.listFiles()) {
-			f.delete();
-		}
+//		for (final File f : databaseFolder.listFiles()) {
+//			f.delete();
+//		}
 
 		final Devices devices = new Devices(databaseFolder);
 		final Parameters parameters = new Parameters();
 
 		final C19XHttpsServer server = new C19XHttpsServer(port, p12KeystoreFile, keystorePasswordFile);
 		final ParametersHandler parametersHandler = new ParametersHandler();
-		final LookupHandler lookupHandler = new LookupHandler();
+		final InfectionDataHandler infectionDataHandler = new InfectionDataHandler();
 		server.getHandlers().put("", new WebHandler(webFolder));
 		server.getHandlers().put("time", new TimeHandler());
 		server.getHandlers().put("registration", new RegistrationHandler(devices));
 		server.getHandlers().put("status", new StatusHandler(devices));
 		server.getHandlers().put("message", new MessageHandler(devices));
-		server.getHandlers().put("lookup", lookupHandler);
+		server.getHandlers().put("infectionData", infectionDataHandler);
 		server.getHandlers().put("parameters", parametersHandler);
 
 		FileUtil.onChange(parametersFile, json -> {
@@ -156,10 +156,10 @@ public class C19XHttpsServer {
 		timer.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
-				Logger.info(tag, "Updating lookup table");
-				final Lookup lookup = new Lookup(devices, parameters.getRetentionPeriod());
-				lookupHandler.set(lookup);
-				Logger.info(tag, "Updated lookup table");
+				Logger.info(tag, "Updating infection data");
+				final InfectionData infectionData = new InfectionData(devices, parameters.getRetention());
+				infectionDataHandler.set(infectionData);
+				Logger.info(tag, "Updated infection data");
 			}
 		}, 0, 10 * 60000);
 
