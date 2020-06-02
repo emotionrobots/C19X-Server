@@ -1,3 +1,6 @@
 /target/
 /bin/
 /web/
+/release/
+/tmp/
+/c19x.tgz

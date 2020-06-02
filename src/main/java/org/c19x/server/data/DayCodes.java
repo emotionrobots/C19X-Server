@@ -19,7 +19,7 @@ public class DayCodes {
 		values = dayCodes(sharedSecret, days);
 	}
 
-	protected final static long[] beaconCodes(final long beaconCodeSeed, final int count) {
+	public final static long[] beaconCodes(final long beaconCodeSeed, final int count) {
 		final ByteBuffer byteBuffer = ByteBuffer.allocate(Long.BYTES);
 		byteBuffer.putLong(0, beaconCodeSeed);
 		final byte[] data = byteBuffer.array();

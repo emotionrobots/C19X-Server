@@ -72,6 +72,13 @@ public class Devices {
 		}
 	}
 
+	public String register(final byte[] sharedSecret) {
+		synchronized (registrations) {
+			final String serialNumber = getSerialNumber();
+			return register(serialNumber, sharedSecret);
+		}
+	}
+
 	public byte[] getSharedSecret(final String serialNumber) {
 		final String sharedSecretInBase64 = registrations.get(serialNumber);
 		if (sharedSecretInBase64 != null) {

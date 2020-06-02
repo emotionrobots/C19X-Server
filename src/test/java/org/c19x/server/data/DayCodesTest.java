@@ -3,6 +3,7 @@ package org.c19x.server.data;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.util.Arrays;
 
 import org.junit.Test;
 
@@ -32,6 +33,10 @@ public class DayCodesTest {
 		}
 	}
 
+	// day=0, dayCode=1443087401359677750, beaconCodeSeed=7525003092670007258,
+	// beaconCodes=[-8129047106903552267, 8443977219705625829]
+	// day=1, dayCode=7940984811893783192, beaconCodeSeed=3537033893445398299,
+	// beaconCodes=[-850124991640589653, -5720254713763274613]
 	@Test
 	public void todayCodes() {
 		final byte[] secret = new byte[] { 0 };
@@ -42,10 +47,20 @@ public class DayCodesTest {
 		assertEquals(7525003092670007258l, todayBeaconCodeSeeds[0]);
 		assertEquals(7940984811893783192l, todayDayCodes[1]);
 		assertEquals(3537033893445398299l, todayBeaconCodeSeeds[1]);
-		System.err.println("day=0, dayCode=" + todayDayCodes[0] + ", beaconCodeSeed=" + todayBeaconCodeSeeds[0]);
-		System.err.println("day=1, dayCode=" + todayDayCodes[1] + ", beaconCodeSeed=" + todayBeaconCodeSeeds[1]);
+		System.err.println("day=0, dayCode=" + todayDayCodes[0] + ", beaconCodeSeed=" + todayBeaconCodeSeeds[0]
+				+ ", beaconCodes=" + Arrays.toString(DayCodes.beaconCodes(todayBeaconCodeSeeds[0], 2)));
+		System.err.println("day=1, dayCode=" + todayDayCodes[1] + ", beaconCodeSeed=" + todayBeaconCodeSeeds[1]
+				+ ", beaconCodes=" + Arrays.toString(DayCodes.beaconCodes(todayBeaconCodeSeeds[1], 2)));
 	}
 
+	// SERVER
+	// day=153, dayCode=-7760134536738241307, beaconCodeSeed=-6483623051771494729,
+	// beaconCodes=[5569969605707727818, -2638397902879369169]
+	// iOS
+	// 153:0 day=-7760134536738241307, seed=-6483623051771494729,
+	// code=5569969605707727818
+	// 153:1 day=-7760134536738241307, seed=-6483623051771494729,
+	// code=-2638397902879369169
 	@Test
 	public void day153Codes() {
 		final byte[] secret = new byte[] { 0 };
@@ -55,8 +70,8 @@ public class DayCodesTest {
 		final long[] todayBeaconCodeSeeds = DayCodes.getBeaconCodeSeeds(dayCodes, today, today + 1);
 		assertEquals(-7760134536738241307l, todayDayCodes[0]);
 		assertEquals(-6483623051771494729l, todayBeaconCodeSeeds[0]);
-		System.err.println(
-				"day=" + today + ", dayCode=" + todayDayCodes[0] + ", beaconCodeSeed=" + todayBeaconCodeSeeds[0]);
+		System.err.println("day=153, dayCode=" + todayDayCodes[0] + ", beaconCodeSeed=" + todayBeaconCodeSeeds[0]
+				+ ", beaconCodes=" + Arrays.toString(DayCodes.beaconCodes(todayBeaconCodeSeeds[0], 2)));
 	}
 
 	@Test

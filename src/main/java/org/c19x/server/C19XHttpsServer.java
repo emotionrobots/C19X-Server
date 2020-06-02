@@ -4,15 +4,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.stream.Collectors;
 
+import org.c19x.server.data.DayCodes;
 import org.c19x.server.data.Devices;
 import org.c19x.server.data.InfectionData;
 import org.c19x.server.data.Parameters;
+import org.c19x.server.handler.ControlHandler;
 import org.c19x.server.handler.InfectionDataHandler;
 import org.c19x.server.handler.MessageHandler;
 import org.c19x.server.handler.ParametersHandler;
@@ -129,16 +130,20 @@ public class C19XHttpsServer {
 		final File webFolder = new File(args[5]);
 
 		// TEST ONLY
-//		for (final File f : databaseFolder.listFiles()) {
-//			f.delete();
-//		}
+		for (final File f : databaseFolder.listFiles()) {
+			f.delete();
+		}
 
 		final Devices devices = new Devices(databaseFolder);
-		final Parameters parameters = new Parameters();
+		final Parameters parameters = new Parameters(parametersFile);
 
 		final C19XHttpsServer server = new C19XHttpsServer(port, p12KeystoreFile, keystorePasswordFile);
 		final ParametersHandler parametersHandler = new ParametersHandler();
 		final InfectionDataHandler infectionDataHandler = new InfectionDataHandler();
+		final ControlHandler controlHandler = new ControlHandler(devices, parameters, infectionDataHandler);
+
+		infectionDataHandler.set(new InfectionData(devices, parameters.getRetention()));
+
 		server.getHandlers().put("", new WebHandler(webFolder));
 		server.getHandlers().put("time", new TimeHandler());
 		server.getHandlers().put("registration", new RegistrationHandler(devices));
@@ -146,22 +151,20 @@ public class C19XHttpsServer {
 		server.getHandlers().put("message", new MessageHandler(devices));
 		server.getHandlers().put("infectionData", infectionDataHandler);
 		server.getHandlers().put("parameters", parametersHandler);
+		server.getHandlers().put("control", controlHandler);
 
 		FileUtil.onChange(parametersFile, json -> {
 			parameters.fromJSON(json);
 			parametersHandler.set(parameters);
 		});
 
-		final Timer timer = new Timer(true);
-		timer.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				Logger.info(tag, "Updating infection data");
-				final InfectionData infectionData = new InfectionData(devices, parameters.getRetention());
-				infectionDataHandler.set(infectionData);
-				Logger.info(tag, "Updated infection data");
-			}
-		}, 0, 10 * 60000);
+		// TEST
+		final String testDevice = devices.register(new byte[] { 0 });
+		final String testDeviceSerialNumber = testDevice.split(",")[0];
+		final long[] beaconCodeSeeds = devices.getCodes(testDeviceSerialNumber).getBeaconCodeSeeds(1);
+		final long[] beaconCodes = DayCodes.beaconCodes(beaconCodeSeeds[0], 2);
+		Logger.warn(tag, "TEST DEVICE (serialNumber={},seeds={},beaconCodes={})", testDeviceSerialNumber,
+				Arrays.toString(beaconCodeSeeds), Arrays.toString(beaconCodes));
 
 		server.start();
 	}

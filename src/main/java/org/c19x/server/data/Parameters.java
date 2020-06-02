@@ -1,9 +1,13 @@
 package org.c19x.server.data;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.util.Base64;
+
 import org.c19x.util.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 public class Parameters {
 	private final static String tag = Parameters.class.getName();
@@ -23,6 +27,15 @@ public class Parameters {
 	// 1 = Stay at home
 	// 2 = Self-isolation
 	private int advice = 1;
+	// Admin password hash
+	private String passwordHashBase64 = "";
+
+	public Parameters() {
+	}
+
+	public Parameters(final File file) {
+		fromJSON(file);
+	}
 
 	@SuppressWarnings("unchecked")
 	public final String toJSON() {
@@ -36,6 +49,17 @@ public class Parameters {
 		return s;
 	}
 
+	public final void fromJSON(final File file) {
+		if (file.exists() && file.canRead()) {
+			try {
+				final String json = new String(Files.readAllBytes(file.toPath()));
+				fromJSON(json);
+			} catch (Exception e) {
+				Logger.warn(tag, "Failed to read file (file={})", e, file);
+			}
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	public final void fromJSON(final String string) {
 		try {
@@ -46,8 +70,14 @@ public class Parameters {
 				retention = Integer.parseInt((String) j.getOrDefault("retention", Integer.toString(retention)));
 				proximity = Integer.parseInt((String) j.getOrDefault("proximity", Integer.toString(proximity)));
 				exposure = Integer.parseInt((String) j.getOrDefault("exposure", Integer.toString(exposure)));
+
+				final String password = (String) j.getOrDefault("password", "");
+				final MessageDigest sha = MessageDigest.getInstance("SHA-256");
+				final byte[] passwordHash = sha.digest(password.getBytes());
+				passwordHashBase64 = Base64.getEncoder().encodeToString(passwordHash).replace("=", "");
+				Logger.warn(tag, "Control password {}", passwordHashBase64);
 			}
-		} catch (ParseException e) {
+		} catch (Exception e) {
 			Logger.warn(tag, "Failed to parse string", e);
 		}
 	}
@@ -70,6 +100,10 @@ public class Parameters {
 
 	public int getExposure() {
 		return exposure;
+	}
+
+	public String getPasswordHashBase64() {
+		return passwordHashBase64;
 	}
 
 	@Override
