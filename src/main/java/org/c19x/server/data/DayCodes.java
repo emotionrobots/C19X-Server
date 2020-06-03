@@ -11,7 +11,6 @@ public class DayCodes {
 	private final static String tag = DayCodes.class.getName();
 	private final static long epoch = epoch();
 	private final static int days = 365 * 5;
-	private final static int codesPerDay = 24 * 10;
 	private final static long dayMillis = 24 * 60 * 60 * 1000;
 	private final long[] values;
 

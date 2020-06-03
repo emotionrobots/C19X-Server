@@ -68,6 +68,7 @@ public class C19XHttpsServer {
 	 * @param jettyServer
 	 * @param port        Default port for HTTP is 8080
 	 */
+	@SuppressWarnings("unused")
 	private final static void enableHTTP(final Server jettyServer, final int port) {
 		final HttpConfiguration config = new HttpConfiguration();
 		config.addCustomizer(new SecureRequestCustomizer());

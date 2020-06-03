@@ -16,6 +16,7 @@ import org.c19x.util.SecurityUtil;
  *
  */
 public class Devices {
+	@SuppressWarnings("unused")
 	private final static String tag = Devices.class.getName();
 	private final static int sharedSecretLength = 32;
 	private final KeyValueStore parameters;
