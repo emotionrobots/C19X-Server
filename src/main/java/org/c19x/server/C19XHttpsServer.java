@@ -4,12 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import org.c19x.server.data.DayCodes;
 import org.c19x.server.data.Devices;
 import org.c19x.server.data.InfectionData;
 import org.c19x.server.data.Parameters;
@@ -129,11 +130,6 @@ public class C19XHttpsServer {
 		final File databaseFolder = new File(args[4]);
 		final File webFolder = new File(args[5]);
 
-		// TEST ONLY
-		for (final File f : databaseFolder.listFiles()) {
-			f.delete();
-		}
-
 		final Devices devices = new Devices(databaseFolder);
 		final Parameters parameters = new Parameters(parametersFile);
 
@@ -141,8 +137,8 @@ public class C19XHttpsServer {
 		final ParametersHandler parametersHandler = new ParametersHandler();
 		final InfectionDataHandler infectionDataHandler = new InfectionDataHandler();
 		final ControlHandler controlHandler = new ControlHandler(devices, parameters, infectionDataHandler);
-
-		infectionDataHandler.set(new InfectionData(devices, parameters.getRetention()));
+		final AtomicReference<Timer> infectionDataUpdateTimer = new AtomicReference<>(
+				infectionDataUpdateTimer(devices, parameters, infectionDataHandler));
 
 		server.getHandlers().put("", new WebHandler(webFolder));
 		server.getHandlers().put("time", new TimeHandler());
@@ -156,16 +152,22 @@ public class C19XHttpsServer {
 		FileUtil.onChange(parametersFile, json -> {
 			parameters.fromJSON(json);
 			parametersHandler.set(parameters);
+			infectionDataUpdateTimer.get().cancel();
+			infectionDataUpdateTimer.set(infectionDataUpdateTimer(devices, parameters, infectionDataHandler));
 		});
 
-		// TEST
-		final String testDevice = devices.register(new byte[] { 0 });
-		final String testDeviceSerialNumber = testDevice.split(",")[0];
-		final long[] beaconCodeSeeds = devices.getCodes(testDeviceSerialNumber).getBeaconCodeSeeds(1);
-		final long[] beaconCodes = DayCodes.beaconCodes(beaconCodeSeeds[0], 2);
-		Logger.warn(tag, "TEST DEVICE (serialNumber={},seeds={},beaconCodes={})", testDeviceSerialNumber,
-				Arrays.toString(beaconCodeSeeds), Arrays.toString(beaconCodes));
-
 		server.start();
+	}
+
+	private final static Timer infectionDataUpdateTimer(final Devices devices, final Parameters parameters,
+			final InfectionDataHandler infectionDataHandler) {
+		final Timer timer = new Timer();
+		timer.scheduleAtFixedRate(new TimerTask() {
+			@Override
+			public void run() {
+				infectionDataHandler.set(new InfectionData(devices, parameters.getRetention()));
+			}
+		}, 0, ((long) parameters.getUpdate()) * 60 * 1000);
+		return timer;
 	}
 }

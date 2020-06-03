@@ -1,10 +1,11 @@
 {
 "active":"true",
 "password":"password",
+"update":"1",
 "server":"https://c19x-dev.servehttp.com/",
 "retention":"14"
 "proximity":"-77",
-"exposure":"3",
+"exposure":"2",
 "advice":"1"
 }
 

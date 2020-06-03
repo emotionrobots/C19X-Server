@@ -29,6 +29,8 @@ public class Parameters {
 	private int advice = 1;
 	// Admin password hash
 	private String passwordHashBase64 = "";
+	// Infection data update delay in minutes
+	private int update = 24 * 60;
 
 	public Parameters() {
 	}
@@ -76,6 +78,7 @@ public class Parameters {
 				final byte[] passwordHash = sha.digest(password.getBytes());
 				passwordHashBase64 = Base64.getEncoder().encodeToString(passwordHash).replace("=", "");
 				Logger.warn(tag, "Control password {}", passwordHashBase64);
+				update = Integer.parseInt((String) j.getOrDefault("update", Integer.toString(update)));
 			}
 		} catch (Exception e) {
 			Logger.warn(tag, "Failed to parse string", e);
@@ -104,6 +107,10 @@ public class Parameters {
 
 	public String getPasswordHashBase64() {
 		return passwordHashBase64;
+	}
+
+	public int getUpdate() {
+		return update;
 	}
 
 	@Override

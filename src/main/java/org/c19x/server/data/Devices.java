@@ -21,6 +21,7 @@ public class Devices {
 	private final KeyValueStore parameters;
 	private final KeyValueStore registrations;
 	private final KeyValueStore statuses;
+	private final KeyValueStore patterns;
 	private final KeyValueStore messages;
 	private final Map<String, DayCodes> codes;
 
@@ -29,6 +30,7 @@ public class Devices {
 		registrations = new KeyValueStore(new File(folder, "registrations"));
 		statuses = new KeyValueStore(new File(folder, "statuses"));
 		messages = new KeyValueStore(new File(folder, "messages"));
+		patterns = new KeyValueStore(new File(folder, "patterns"));
 		codes = new ConcurrentHashMap<>();
 		generateCodes();
 	}
@@ -104,6 +106,14 @@ public class Devices {
 
 	public String getStatus(final String serialNumber) {
 		return statuses.get(serialNumber);
+	}
+
+	public void setPattern(final String serialNumber, final String pattern) {
+		patterns.put(serialNumber, pattern);
+	}
+
+	public String getPattern(final String serialNumber) {
+		return patterns.get(serialNumber);
 	}
 
 	public void setMessage(final String serialNumber, final String message) {

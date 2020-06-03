@@ -1,6 +1,9 @@
 package org.c19x.server.handler;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -12,6 +15,8 @@ import org.c19x.server.data.Parameters;
 import org.c19x.util.Logger;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 public class ControlHandler extends AbstractHandler {
 	private final static String tag = ControlHandler.class.getName();
@@ -39,7 +44,13 @@ public class ControlHandler extends AbstractHandler {
 				final String command = request.getParameter("command");
 				switch (command) {
 				case "infectionData": {
-					infectionDataHandler.set(new InfectionData(devices, parameters.getRetention()));
+					final InfectionData infectionData = new InfectionData(devices, parameters.getRetention());
+					infectionDataHandler.set(infectionData);
+					response.setContentType("application/json");
+					final PrintWriter printWriter = response.getWriter();
+					printWriter.write(infectionData.toJSON());
+					printWriter.flush();
+					printWriter.close();
 					Logger.debug(tag, "Updated infection data");
 					break;
 				}
@@ -57,6 +68,16 @@ public class ControlHandler extends AbstractHandler {
 					Logger.debug(tag, "Set message (serialNumber={},message={})", serialNumber, message);
 					break;
 				}
+				case "list": {
+					response.setContentType("application/json");
+					final PrintWriter printWriter = response.getWriter();
+					final String list = list(devices);
+					printWriter.write(list);
+					printWriter.flush();
+					printWriter.close();
+					Logger.debug(tag, "Listed devices");
+					break;
+				}
 				default: {
 					Logger.warn(tag, "Unknown command (address={},command={})", request.getRemoteAddr(), command);
 				}
@@ -70,5 +91,28 @@ public class ControlHandler extends AbstractHandler {
 		} finally {
 			baseRequest.setHandled(true);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private final static String list(final Devices devices) {
+		final JSONArray j = new JSONArray();
+		final List<String> serialNumbers = new ArrayList<>(devices.getSerialNumbers());
+		serialNumbers.sort((a, b) -> Long.compare(Long.parseLong(a), Long.parseLong(b)));
+		serialNumbers.forEach(n -> {
+			final JSONObject o = new JSONObject();
+			o.put("serialNumber", n);
+			final String status = devices.getStatus(n);
+			o.put("status", (status == null ? "0" : status));
+			final String message = devices.getMessage(n);
+			if (message != null) {
+				o.put("message", message);
+			}
+			final String pattern = devices.getPattern(n);
+			if (pattern != null) {
+				o.put("pattern", pattern);
+			}
+			j.add(o);
+		});
+		return j.toJSONString();
 	}
 }

@@ -35,12 +35,17 @@ public class StatusHandler extends AbstractHandler {
 				final String status = fields[1];
 				if (Math.abs(Long.parseLong(timeWindow) - System.currentTimeMillis()) < 150000) {
 					devices.setStatus(key, status);
+					if (fields.length > 2) {
+						final String pattern = fields[2];
+						devices.setPattern(key, pattern);
+					}
 					response.setStatus(HttpServletResponse.SC_OK);
 					final PrintWriter printWriter = response.getWriter();
 					printWriter.print(status);
 					printWriter.flush();
 					printWriter.close();
-					Logger.debug(tag, "Success (address={},key={},status={})", request.getRemoteAddr(), key, status);
+					Logger.debug(tag, "Success (address={},key={},status={},pattern={})", request.getRemoteAddr(), key,
+							status);
 				} else {
 					response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 					Logger.debug(tag, "Unauthorised (address={},key={},timeWindow={})", request.getRemoteAddr(), key,
