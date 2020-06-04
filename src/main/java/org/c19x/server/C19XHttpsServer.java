@@ -123,6 +123,21 @@ public class C19XHttpsServer {
 				port);
 	}
 
+	// @formatter:off
+	/**
+	 * Start HTTPS server. See enableHTTPS() for setup instruction.
+	 * Example parameters : 443 /opt/c19x/keystore.p12 /opt/c19x/keystore.pw config/parameters.json config/data web
+	 * port 				Port 443 for HTTPS (or 8443 then use port forwarding)
+	 * p12KeystoreFile		Keystore file in P12 format, see scripts/convertCertificateFromPemtoP12.sh
+	 * keystorePasswordFile	Plain text file containing password for keystore
+	 * parametersFile		JSON format parameters file, see config/parameters.json
+	 * databaseFolder		Database folder for storing all application data, e.g. device registration
+	 * webFolder			Web site folder for embedded web server
+	 * 
+	 * @param args
+	 * @throws Exception
+	 */
+	// @formatter:on
 	public static void main(String[] args) throws Exception {
 		final int port = Integer.parseInt(args[0]);
 		final File p12KeystoreFile = new File(args[1]);
