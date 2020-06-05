@@ -34,7 +34,7 @@ C19X iOS and Android app clients communicate with this central server via HTTPS 
 The central server also offers:
 1. Embedded web server
    - For publishing an associated web site (e.g. https://www.c19x.org)
-2. Adminstration functions
+2. Administration functions
    - Update infection data immediately.
    - Set health status associated with serial number, e.g. for integration with test results database.
    - Set message associated with serial number, e.g. to request additional action from user.
