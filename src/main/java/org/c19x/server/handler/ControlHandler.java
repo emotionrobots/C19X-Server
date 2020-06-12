@@ -20,6 +20,21 @@ import org.json.simple.JSONObject;
 
 public class ControlHandler extends AbstractHandler {
 	private final static String tag = ControlHandler.class.getName();
+	// @formatter:off
+	private final static String helpText = 
+			  "C19X Server Control Commands\n" 
+			+ "============================\n\n"
+			+ "GET /control\n"
+			+ "Display this help message.\n\n"
+			+ "GET /control?command=list&password=[passwordHashBase64]\n"
+			+ "List all registered devices, contact pattern and status.\n\n"
+			+ "GET /control?command=status&serialNumber=[serialNumber]&status=[statusRawValue]&password=[passwordHashBase64]\n"
+			+ "Set status of registered device with [serialNumber] to [statusRawValue].\n\n"
+			+ "GET /control?command=message&serialNumber=[serialNumber]&message=[message]&password=[passwordHashBase64]\n"
+			+ "Set message for registered device with [serialNumber] to [message].\n\n"
+			+ "GET /control?command=infectionData&password=[passwordHashBase64]\n"
+			+ "Update infection data immediately.";
+	// @formatter:on
 	private final Devices devices;
 	private final Parameters parameters;
 	private final InfectionDataHandler infectionDataHandler;
@@ -36,54 +51,64 @@ public class ControlHandler extends AbstractHandler {
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
 		try {
-			final String passwordHashBase64 = request.getParameter("password");
-			if (!parameters.getPasswordHashBase64().equals(passwordHashBase64)) {
-				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-				Logger.debug(tag, "Unauthorised (address={},password={})", request.getRemoteAddr(), passwordHashBase64);
+			final String command = request.getParameter("command");
+			if (command == null) {
+				response.setContentType("text/plain");
+				final PrintWriter printWriter = response.getWriter();
+				printWriter.write(helpText);
+				printWriter.flush();
+				printWriter.close();
+				Logger.debug(tag, "Help");
 			} else {
-				final String command = request.getParameter("command");
-				switch (command) {
-				case "infectionData": {
-					final InfectionData infectionData = new InfectionData(devices, parameters.getRetention());
-					infectionDataHandler.set(infectionData);
-					response.setContentType("application/json");
-					final PrintWriter printWriter = response.getWriter();
-					printWriter.write(infectionData.toJSON());
-					printWriter.flush();
-					printWriter.close();
-					Logger.debug(tag, "Updated infection data");
-					break;
+				final String passwordHashBase64 = request.getParameter("password");
+				if (!parameters.getPasswordHashBase64().equals(passwordHashBase64)) {
+					response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+					Logger.debug(tag, "Unauthorised (address={},password={})", request.getRemoteAddr(),
+							passwordHashBase64);
+				} else {
+					switch (command) {
+					case "infectionData": {
+						final InfectionData infectionData = new InfectionData(devices, parameters.getRetention());
+						infectionDataHandler.set(infectionData);
+						response.setContentType("application/json");
+						final PrintWriter printWriter = response.getWriter();
+						printWriter.write(infectionData.toJSON());
+						printWriter.flush();
+						printWriter.close();
+						Logger.debug(tag, "Updated infection data");
+						break;
+					}
+					case "status": {
+						final String serialNumber = request.getParameter("serialNumber");
+						final String status = request.getParameter("status");
+						devices.setStatus(serialNumber, status);
+						Logger.debug(tag, "Set status (serialNumber={},status={})", serialNumber, status);
+						break;
+					}
+					case "message": {
+						final String serialNumber = request.getParameter("serialNumber");
+						final String message = request.getParameter("message");
+						devices.setMessage(serialNumber, message);
+						Logger.debug(tag, "Set message (serialNumber={},message={})", serialNumber, message);
+						break;
+					}
+					case "list": {
+						response.setContentType("application/json");
+						final PrintWriter printWriter = response.getWriter();
+						final String list = list(devices);
+						printWriter.write(list);
+						printWriter.flush();
+						printWriter.close();
+						Logger.debug(tag, "Listed devices");
+						break;
+					}
+					default: {
+						Logger.warn(tag, "Unknown command (address={},command={})", request.getRemoteAddr(), command);
+					}
+					}
+					response.setStatus(HttpServletResponse.SC_OK);
+					Logger.debug(tag, "Success (address={},command={})", request.getRemoteAddr(), command);
 				}
-				case "status": {
-					final String serialNumber = request.getParameter("serialNumber");
-					final String status = request.getParameter("status");
-					devices.setStatus(serialNumber, status);
-					Logger.debug(tag, "Set status (serialNumber={},status={})", serialNumber, status);
-					break;
-				}
-				case "message": {
-					final String serialNumber = request.getParameter("serialNumber");
-					final String message = request.getParameter("message");
-					devices.setMessage(serialNumber, message);
-					Logger.debug(tag, "Set message (serialNumber={},message={})", serialNumber, message);
-					break;
-				}
-				case "list": {
-					response.setContentType("application/json");
-					final PrintWriter printWriter = response.getWriter();
-					final String list = list(devices);
-					printWriter.write(list);
-					printWriter.flush();
-					printWriter.close();
-					Logger.debug(tag, "Listed devices");
-					break;
-				}
-				default: {
-					Logger.warn(tag, "Unknown command (address={},command={})", request.getRemoteAddr(), command);
-				}
-				}
-				response.setStatus(HttpServletResponse.SC_OK);
-				Logger.debug(tag, "Success (address={},command={})", request.getRemoteAddr(), command);
 			}
 		} catch (Throwable e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
