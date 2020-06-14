@@ -1,7 +1,11 @@
 {
 "active":"true",
+
 "password":"password",
 "update":"720",
+"expireSymptomatic":"8",
+"expireConfirmedDiagnosis":"8",
+
 "server":"https://c19x-dev.servehttp.com/",
 "retention":"14"
 "proximity":"-77",
