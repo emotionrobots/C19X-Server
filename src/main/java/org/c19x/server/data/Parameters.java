@@ -12,25 +12,31 @@ import org.json.simple.parser.JSONParser;
 public class Parameters {
 	private final static String tag = Parameters.class.getName();
 
-	private String server = "https://appserver-test.c19x.org";
+	protected String server = "https://preprod.c19x.org";
 	// Retention period
-	private int retention = 14;
+	protected int retention = 14;
 	// Signal strength threshold is based on the mean - standard deviation of signal
 	// strength measurements at 2 meter distance presented in the paper :
 	// Sekara, Vedran & Lehmann, Sune. (2014). The Strength of Friendship Ties in
 	// Proximity Sensor Data. PloS one. 9. e100915. 10.1371/journal.pone.0100915.
-	private int proximity = -77;
+	protected int proximity = -77;
 	// Exposure threshold
-	private int exposure = 15;
+	protected int exposure = 15;
 	// Default advice
 	// 0 = No restriction
 	// 1 = Stay at home
 	// 2 = Self-isolation
-	private int advice = 1;
+	protected int advice = 1;
 	// Admin password hash
-	private String passwordHashBase64 = "";
+	protected String passwordHashBase64 = "";
 	// Infection data update delay in minutes
-	private int update = 24 * 60;
+	protected int update = 24 * 60;
+	// Symptomatic report expiry in days to discount report from infection report
+	// updates.
+	protected int expireSymptomatic = 8;
+	// Confirmed diagnosis report expiry in days to discount report from infection
+	// report updates.
+	protected int expireConfirmedDiagnosis = 8;
 
 	public Parameters() {
 	}
@@ -67,18 +73,23 @@ public class Parameters {
 		try {
 			final JSONObject j = (JSONObject) new JSONParser().parse(string);
 			if (Boolean.parseBoolean((String) j.getOrDefault("active", "false"))) {
+				// Device parameters
 				server = (String) j.getOrDefault("server", server);
 				advice = Integer.parseInt((String) j.getOrDefault("advice", Integer.toString(advice)));
 				retention = Integer.parseInt((String) j.getOrDefault("retention", Integer.toString(retention)));
 				proximity = Integer.parseInt((String) j.getOrDefault("proximity", Integer.toString(proximity)));
 				exposure = Integer.parseInt((String) j.getOrDefault("exposure", Integer.toString(exposure)));
-
+				// Server parameters
 				final String password = (String) j.getOrDefault("password", "");
 				final MessageDigest sha = MessageDigest.getInstance("SHA-256");
 				final byte[] passwordHash = sha.digest(password.getBytes());
 				passwordHashBase64 = Base64.getEncoder().encodeToString(passwordHash).replace("=", "");
 				Logger.warn(tag, "Control password {}", passwordHashBase64);
 				update = Integer.parseInt((String) j.getOrDefault("update", Integer.toString(update)));
+				expireSymptomatic = Integer
+						.parseInt((String) j.getOrDefault("expireSymptomatic", Integer.toString(update)));
+				expireConfirmedDiagnosis = Integer
+						.parseInt((String) j.getOrDefault("expireConfirmedDiagnosis", Integer.toString(update)));
 			}
 		} catch (Exception e) {
 			Logger.warn(tag, "Failed to parse string", e);
@@ -111,6 +122,14 @@ public class Parameters {
 
 	public int getUpdate() {
 		return update;
+	}
+
+	public int getExpireSymptomatic() {
+		return expireSymptomatic;
+	}
+
+	public int getExpireConfirmedDiagnosis() {
+		return expireConfirmedDiagnosis;
 	}
 
 	@Override

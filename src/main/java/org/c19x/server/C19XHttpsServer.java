@@ -181,7 +181,7 @@ public class C19XHttpsServer {
 		timer.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
-				infectionDataHandler.set(new InfectionData(devices, parameters.getRetention()));
+				infectionDataHandler.set(new InfectionData(devices, parameters));
 			}
 		}, 0, ((long) parameters.getUpdate()) * 60 * 1000);
 		return timer;

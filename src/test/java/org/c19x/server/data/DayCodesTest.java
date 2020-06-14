@@ -104,7 +104,9 @@ public class DayCodesTest {
 		final long[] todayBeaconCodeSeeds = deviceDayCodes.getBeaconCodeSeeds(today, today + 1);
 		assertEquals(-7760134536738241307l, todayDayCodes[0]);
 		assertEquals(-6483623051771494729l, todayBeaconCodeSeeds[0]);
-		final InfectionData infectionData = new InfectionData(devices, 1);
+		final Parameters parameters = new Parameters();
+		parameters.retention = 1;
+		final InfectionData infectionData = new InfectionData(devices, parameters);
 		assertEquals("{\"-6483623051771494729\":\"2\"}", infectionData.toJSON());
 		System.err.println(infectionData.toJSON());
 	}

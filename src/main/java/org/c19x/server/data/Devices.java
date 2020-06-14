@@ -102,11 +102,18 @@ public class Devices {
 	}
 
 	public void setStatus(final String serialNumber, final String status) {
-		statuses.put(serialNumber, status);
+		final String value = status + "," + Long.toString(System.currentTimeMillis());
+		statuses.put(serialNumber, value);
 	}
 
 	public String getStatus(final String serialNumber) {
-		return statuses.get(serialNumber);
+		final String value = statuses.get(serialNumber);
+		return value.substring(0, value.indexOf(','));
+	}
+
+	public long getStatusTimestamp(final String serialNumber) {
+		final String value = statuses.get(serialNumber);
+		return Long.parseLong(value.substring(value.indexOf(',') + 1));
 	}
 
 	public void setPattern(final String serialNumber, final String pattern) {

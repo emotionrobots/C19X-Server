@@ -68,7 +68,7 @@ public class ControlHandler extends AbstractHandler {
 				} else {
 					switch (command) {
 					case "infectionData": {
-						final InfectionData infectionData = new InfectionData(devices, parameters.getRetention());
+						final InfectionData infectionData = new InfectionData(devices, parameters);
 						infectionDataHandler.set(infectionData);
 						response.setContentType("application/json");
 						final PrintWriter printWriter = response.getWriter();
