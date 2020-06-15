@@ -23,6 +23,11 @@ public class KeyValueStore {
 		db.commit();
 	}
 
+	public void remove(final String key) {
+		map.remove(key);
+		db.commit();
+	}
+
 	public String get(final String key) {
 		return map.get(key);
 	}

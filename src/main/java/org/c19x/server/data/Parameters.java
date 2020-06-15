@@ -37,6 +37,8 @@ public class Parameters {
 	// Confirmed diagnosis report expiry in days to discount report from infection
 	// report updates.
 	protected int expireConfirmedDiagnosis = 8;
+	// Registration expiry in days to delete inactive devices.
+	protected int expireInactivity = 21;
 
 	public Parameters() {
 	}
@@ -90,6 +92,8 @@ public class Parameters {
 						.parseInt((String) j.getOrDefault("expireSymptomatic", Integer.toString(update)));
 				expireConfirmedDiagnosis = Integer
 						.parseInt((String) j.getOrDefault("expireConfirmedDiagnosis", Integer.toString(update)));
+				expireInactivity = Integer
+						.parseInt((String) j.getOrDefault("expireInactivity", Integer.toString(update)));
 			}
 		} catch (Exception e) {
 			Logger.warn(tag, "Failed to parse string", e);
@@ -130,6 +134,10 @@ public class Parameters {
 
 	public int getExpireConfirmedDiagnosis() {
 		return expireConfirmedDiagnosis;
+	}
+
+	public int getExpireInactivity() {
+		return expireInactivity;
 	}
 
 	@Override

@@ -153,8 +153,8 @@ public class C19XHttpsServer {
 		final ParametersHandler parametersHandler = new ParametersHandler();
 		final InfectionDataHandler infectionDataHandler = new InfectionDataHandler();
 		final ControlHandler controlHandler = new ControlHandler(devices, parameters, infectionDataHandler);
-		final AtomicReference<Timer> infectionDataUpdateTimer = new AtomicReference<>(
-				infectionDataUpdateTimer(devices, parameters, infectionDataHandler));
+		final AtomicReference<Timer> updateTimer = new AtomicReference<>(
+				updateTimer(devices, parameters, infectionDataHandler));
 
 		server.getHandlers().put("", new WebHandler(webFolder));
 		server.getHandlers().put("time", new TimeHandler());
@@ -168,19 +168,22 @@ public class C19XHttpsServer {
 		FileUtil.onChange(parametersFile, json -> {
 			parameters.fromJSON(json);
 			parametersHandler.set(parameters);
-			infectionDataUpdateTimer.get().cancel();
-			infectionDataUpdateTimer.set(infectionDataUpdateTimer(devices, parameters, infectionDataHandler));
+			updateTimer.get().cancel();
+			updateTimer.set(updateTimer(devices, parameters, infectionDataHandler));
 		});
 
 		server.start();
 	}
 
-	private final static Timer infectionDataUpdateTimer(final Devices devices, final Parameters parameters,
+	private final static Timer updateTimer(final Devices devices, final Parameters parameters,
 			final InfectionDataHandler infectionDataHandler) {
 		final Timer timer = new Timer();
 		timer.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
+				// Delete inactive devices
+				devices.clear(parameters.getExpireInactivity());
+				// Update infection data
 				infectionDataHandler.set(new InfectionData(devices, parameters));
 			}
 		}, 0, ((long) parameters.getUpdate()) * 60 * 1000);

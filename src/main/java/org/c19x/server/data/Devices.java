@@ -2,11 +2,13 @@ package org.c19x.server.data;
 
 import java.io.File;
 import java.util.Base64;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.c19x.util.KeyValueStore;
+import org.c19x.util.Logger;
 import org.c19x.util.SecurityUtil;
 
 /**
@@ -24,6 +26,7 @@ public class Devices {
 	private final KeyValueStore statuses;
 	private final KeyValueStore patterns;
 	private final KeyValueStore messages;
+	private final KeyValueStore timestamps;
 	private final Map<String, DayCodes> codes;
 
 	public Devices(final File folder) {
@@ -32,8 +35,39 @@ public class Devices {
 		statuses = new KeyValueStore(new File(folder, "statuses"));
 		messages = new KeyValueStore(new File(folder, "messages"));
 		patterns = new KeyValueStore(new File(folder, "patterns"));
+		timestamps = new KeyValueStore(new File(folder, "timestamps"));
 		codes = new ConcurrentHashMap<>();
 		generateCodes();
+	}
+
+	/**
+	 * Register activity associated with serial number to retain data.
+	 * 
+	 * @param serialNumber
+	 */
+	public void touch(final String serialNumber) {
+		timestamps.put(serialNumber, Long.toString(System.currentTimeMillis()));
+	}
+
+	public void clear(final long retention) {
+		final long deleteBefore = System.currentTimeMillis() - (retention * 24 * 60 * 60 * 1000);
+		timestamps.entries().forEach(e -> {
+			final long timestamp = Long.parseLong(e.getValue());
+			if (timestamp < deleteBefore) {
+				final String serialNumber = e.getKey();
+				unregister(serialNumber);
+				Logger.debug(tag, "Unregistered (serialNumber={},timestamp={})", serialNumber, new Date(timestamp));
+			}
+		});
+	}
+
+	private void unregister(final String serialNumber) {
+		registrations.remove(serialNumber);
+		statuses.remove(serialNumber);
+		messages.remove(serialNumber);
+		patterns.remove(serialNumber);
+		timestamps.remove(serialNumber);
+		codes.remove(serialNumber);
 	}
 
 	protected void generateCodes() {
@@ -71,13 +105,6 @@ public class Devices {
 			final String serialNumber = getSerialNumber();
 			final byte[] sharedSecret = new byte[sharedSecretLength];
 			SecurityUtil.getSecureRandom().nextBytes(sharedSecret);
-			return register(serialNumber, sharedSecret);
-		}
-	}
-
-	public String register(final byte[] sharedSecret) {
-		synchronized (registrations) {
-			final String serialNumber = getSerialNumber();
 			return register(serialNumber, sharedSecret);
 		}
 	}
@@ -129,7 +156,8 @@ public class Devices {
 	}
 
 	public String getMessage(final String serialNumber) {
-		return messages.get(serialNumber);
+		final String message = messages.get(serialNumber);
+		return message;
 	}
 
 	/**

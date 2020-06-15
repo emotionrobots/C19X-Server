@@ -35,7 +35,7 @@ public class ParametersHandler extends AbstractHandler {
 			printWriter.write(get());
 			printWriter.flush();
 			printWriter.close();
-			Logger.debug(tag, "Success (fromAddress={})", request.getRemoteAddr());
+			Logger.debug(tag, "Success (fromAddress={})", request.getRemoteAddr().hashCode());
 		} catch (Throwable e) {
 			response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
 			Logger.warn(tag, "Failed", e);

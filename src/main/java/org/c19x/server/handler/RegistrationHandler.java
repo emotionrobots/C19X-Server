@@ -25,14 +25,15 @@ public class RegistrationHandler extends AbstractHandler {
 			throws IOException, ServletException {
 		try {
 			final String registration = devices.register();
+			final String serialNumber = registration.split(",")[0];
 			response.setContentType("text/plain; charset=utf-8");
 			response.setStatus(HttpServletResponse.SC_OK);
 			final PrintWriter printWriter = response.getWriter();
 			printWriter.print(registration);
 			printWriter.flush();
 			printWriter.close();
-			Logger.debug(tag, "Success (address={},serialNumber={},sharedSecret={})", request.getRemoteAddr(),
-					registration.split(",")[0], registration.split(",")[1]);
+			devices.touch(serialNumber);
+			Logger.debug(tag, "Success (address={},serialNumber={})", request.getRemoteAddr().hashCode(), serialNumber);
 		} catch (Throwable e) {
 			response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
 			Logger.warn(tag, "Failed", e);

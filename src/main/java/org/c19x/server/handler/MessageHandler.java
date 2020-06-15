@@ -25,33 +25,35 @@ public class MessageHandler extends AbstractHandler {
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
 		try {
-			final String key = request.getParameter("key");
+			final String serialNumber = request.getParameter("key");
 			final String value = request.getParameter("value");
-			final byte[] sharedSecret = devices.getSharedSecret(key);
+			final byte[] sharedSecret = devices.getSharedSecret(serialNumber);
 			if (sharedSecret != null) {
 				final String timeWindow = SecurityUtil.decrypt(sharedSecret, value);
 				if (Math.abs(Long.parseLong(timeWindow) - System.currentTimeMillis()) < 150000) {
 					response.setStatus(HttpServletResponse.SC_OK);
-					final String message = devices.getMessage(key);
+					final String message = devices.getMessage(serialNumber);
 					if (message != null) {
 						final PrintWriter printWriter = response.getWriter();
 						printWriter.print(message);
 						printWriter.flush();
 						printWriter.close();
 					}
-					Logger.debug(tag, "Success (address={},key={},message={})", request.getRemoteAddr(), key, message);
+					devices.touch(serialNumber);
+					Logger.debug(tag, "Success (address={},serialNumber={})", request.getRemoteAddr().hashCode(),
+							serialNumber);
 				} else {
 					response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-					Logger.debug(tag, "Unauthorised (address={},key={},timeWindow={})", request.getRemoteAddr(), key,
-							timeWindow);
+					Logger.debug(tag, "Unauthorised (address={},serialNumber={},timeWindow={})",
+							request.getRemoteAddr().hashCode(), serialNumber, timeWindow);
 				}
 			} else {
 				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-				Logger.debug(tag, "Unregistered (address={},key={})", request.getRemoteAddr(), key);
+				Logger.debug(tag, "Unregistered (address={},key={})", request.getRemoteAddr().hashCode(), serialNumber);
 			}
 		} catch (Throwable e) {
 			response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-			Logger.warn(tag, "Failed (address={})", request.getRemoteAddr(), e);
+			Logger.warn(tag, "Failed (address={})", request.getRemoteAddr().hashCode(), e);
 		} finally {
 			baseRequest.setHandled(true);
 		}

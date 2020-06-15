@@ -5,6 +5,7 @@
 "update":"720",
 "expireSymptomatic":"8",
 "expireConfirmedDiagnosis":"8",
+"expireInactivity":"21",
 
 "server":"https://c19x-dev.servehttp.com/",
 "retention":"14"
