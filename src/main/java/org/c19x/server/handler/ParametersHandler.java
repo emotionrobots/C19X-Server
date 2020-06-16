@@ -30,6 +30,7 @@ public class ParametersHandler extends AbstractHandler {
 			throws IOException, ServletException {
 		try {
 			response.setContentType("application/json");
+			response.setCharacterEncoding("UTF-8");
 			response.setStatus(HttpServletResponse.SC_OK);
 			final PrintWriter printWriter = response.getWriter();
 			printWriter.write(get());

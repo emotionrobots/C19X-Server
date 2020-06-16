@@ -54,6 +54,7 @@ public class ControlHandler extends AbstractHandler {
 			final String command = request.getParameter("command");
 			if (command == null) {
 				response.setContentType("text/plain");
+				response.setCharacterEncoding("UTF-8");
 				final PrintWriter printWriter = response.getWriter();
 				printWriter.write(helpText);
 				printWriter.flush();
@@ -71,6 +72,7 @@ public class ControlHandler extends AbstractHandler {
 						final InfectionData infectionData = new InfectionData(devices, parameters);
 						infectionDataHandler.set(infectionData);
 						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
 						final PrintWriter printWriter = response.getWriter();
 						printWriter.write(infectionData.toJSON());
 						printWriter.flush();
@@ -94,6 +96,7 @@ public class ControlHandler extends AbstractHandler {
 					}
 					case "list": {
 						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
 						final PrintWriter printWriter = response.getWriter();
 						final String list = list(devices);
 						printWriter.write(list);
@@ -104,6 +107,7 @@ public class ControlHandler extends AbstractHandler {
 					}
 					case "summary": {
 						response.setContentType("application/json");
+						response.setCharacterEncoding("UTF-8");
 						final PrintWriter printWriter = response.getWriter();
 						final String list = summary(devices);
 						printWriter.write(list);

@@ -18,7 +18,8 @@ public class TimeHandler extends AbstractHandler {
 	public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
 			throws IOException, ServletException {
 		try {
-			response.setContentType("text/plain; charset=utf-8");
+			response.setContentType("text/plain");
+			response.setCharacterEncoding("UTF-8");
 			response.setStatus(HttpServletResponse.SC_OK);
 			final PrintWriter printWriter = response.getWriter();
 			printWriter.print(Long.toString(System.currentTimeMillis()));

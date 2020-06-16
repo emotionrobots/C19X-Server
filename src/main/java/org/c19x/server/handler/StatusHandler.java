@@ -39,6 +39,8 @@ public class StatusHandler extends AbstractHandler {
 						final String pattern = fields[2];
 						devices.setPattern(serialNumber, pattern);
 					}
+					response.setContentType("text/plain");
+					response.setCharacterEncoding("UTF-8");
 					response.setStatus(HttpServletResponse.SC_OK);
 					final PrintWriter printWriter = response.getWriter();
 					printWriter.print(status);

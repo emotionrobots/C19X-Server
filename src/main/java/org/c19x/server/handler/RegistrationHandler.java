@@ -26,7 +26,8 @@ public class RegistrationHandler extends AbstractHandler {
 		try {
 			final String registration = devices.register();
 			final String serialNumber = registration.split(",")[0];
-			response.setContentType("text/plain; charset=utf-8");
+			response.setContentType("text/plain");
+			response.setCharacterEncoding("UTF-8");
 			response.setStatus(HttpServletResponse.SC_OK);
 			final PrintWriter printWriter = response.getWriter();
 			printWriter.print(registration);

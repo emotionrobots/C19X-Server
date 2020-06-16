@@ -31,6 +31,8 @@ public class MessageHandler extends AbstractHandler {
 			if (sharedSecret != null) {
 				final String timeWindow = SecurityUtil.decrypt(sharedSecret, value);
 				if (Math.abs(Long.parseLong(timeWindow) - System.currentTimeMillis()) < 150000) {
+					response.setContentType("text/plain");
+					response.setCharacterEncoding("UTF-8");
 					response.setStatus(HttpServletResponse.SC_OK);
 					final String message = devices.getMessage(serialNumber);
 					if (message != null) {
