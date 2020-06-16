@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 public class SessionManager {
 	private final static Logger logger = LoggerFactory.getLogger(SessionManager.class);
+	public final static SessionManager shared = new SessionManager(new File("config/users.txt"));
+
 	private final static int secureRandomSeedSize = 2048;
 	private final static int sessionTokenSize = 32;
 	private final static int sessionIdleExpiryMillis = 30 * 60 * 1000; // 30 minutes
@@ -95,8 +97,8 @@ public class SessionManager {
 					}
 				}
 				bufferedWriter.close();
-				FileSystem.delete(usersFile);
-				FileSystem.move(newUsersFile, usersFile);
+				usersFile.delete();
+				newUsersFile.renameTo(usersFile);
 				logger.info("Remove user completed successfully (name={},file={})", userName, usersFile);
 				usersFileLastHash = 0;
 				return userWasRemoved;
