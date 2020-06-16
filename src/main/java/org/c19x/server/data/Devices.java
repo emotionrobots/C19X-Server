@@ -135,12 +135,28 @@ public class Devices {
 
 	public String getStatus(final String serialNumber) {
 		final String value = statuses.get(serialNumber);
-		return value.substring(0, value.indexOf(','));
+		if (value == null) {
+			return "0";
+		}
+		try {
+			return value.substring(0, value.indexOf(','));
+		} catch (Throwable e) {
+			Logger.warn(tag, "Invalid status value (serialNumber={})", serialNumber);
+			return "0";
+		}
 	}
 
 	public long getStatusTimestamp(final String serialNumber) {
 		final String value = statuses.get(serialNumber);
-		return Long.parseLong(value.substring(value.indexOf(',') + 1));
+		if (value == null) {
+			return 0;
+		}
+		try {
+			return Long.parseLong(value.substring(value.indexOf(',') + 1));
+		} catch (Throwable e) {
+			Logger.warn(tag, "Invalid status timestamp (serialNumber={})", serialNumber);
+			return 0;
+		}
 	}
 
 	public void setPattern(final String serialNumber, final String pattern) {
