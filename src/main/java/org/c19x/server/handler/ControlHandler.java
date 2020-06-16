@@ -102,6 +102,16 @@ public class ControlHandler extends AbstractHandler {
 						Logger.debug(tag, "Listed devices");
 						break;
 					}
+					case "summary": {
+						response.setContentType("application/json");
+						final PrintWriter printWriter = response.getWriter();
+						final String list = summary(devices);
+						printWriter.write(list);
+						printWriter.flush();
+						printWriter.close();
+						Logger.debug(tag, "Summary");
+						break;
+					}
 					default: {
 						Logger.warn(tag, "Unknown command (address={},command={})", request.getRemoteAddr(), command);
 					}
@@ -116,6 +126,35 @@ public class ControlHandler extends AbstractHandler {
 		} finally {
 			baseRequest.setHandled(true);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private final static String summary(final Devices devices) {
+		final JSONObject o = new JSONObject();
+		{
+			// STATUS
+			long healthy = 0, symptomatic = 0, confirmedDiagnosis = 0;
+			for (final String serialNumber : devices.getSerialNumbers()) {
+				switch (devices.getStatus(serialNumber)) {
+				case "0":
+					healthy++;
+					break;
+				case "1":
+					symptomatic++;
+					break;
+				case "2":
+					confirmedDiagnosis++;
+					break;
+				}
+			}
+			final JSONObject j = new JSONObject();
+			j.put("healthy", Long.toString(healthy));
+			j.put("symptomatic", Long.toString(symptomatic));
+			j.put("confirmedDiagnosis", Long.toString(confirmedDiagnosis));
+			j.put("total", Long.toString(healthy + symptomatic + confirmedDiagnosis));
+			o.put("status", j);
+		}
+		return o.toJSONString();
 	}
 
 	@SuppressWarnings("unchecked")
