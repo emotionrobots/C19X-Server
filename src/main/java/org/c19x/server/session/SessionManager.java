@@ -64,7 +64,7 @@ public class SessionManager {
 	private boolean addUser(final String userName, final String password) {
 		loadUsers();
 		if (!users.containsKey(userName)) {
-			final String entry = userName + "\t" + sha256(password) + "\n";
+			final String entry = userName + "\t" + password + "\n";
 			try (final BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(usersFile, true))) {
 				bufferedWriter.write(entry);
 				bufferedWriter.close();
@@ -83,7 +83,7 @@ public class SessionManager {
 
 	public boolean removeUser(final String userName, final String password) {
 		loadUsers();
-		if (users.containsKey(userName) && users.get(userName).hashOfPassword.equals(sha256(password))) {
+		if (users.containsKey(userName) && users.get(userName).hashOfPassword.equals(password)) {
 			final File newUsersFile = new File(usersFile.getParentFile(), usersFile.getName() + ".tmp");
 			boolean userWasRemoved = false;
 			try (final BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(newUsersFile, true))) {
@@ -115,7 +115,7 @@ public class SessionManager {
 		try {
 			final List<String> lines = Files.readAllLines(usersFile.toPath());
 			final int hash = String.join("\n", lines).hashCode();
-			if (hash != usersFileLastHash) {
+			if (hash == 0 || hash != usersFileLastHash) {
 				Logger.debug(tag, "Loading users (file={},changed=true,hash={},lastHash={})", usersFile, hash,
 						usersFileLastHash);
 				final Set<User> accounts = new HashSet<>();
