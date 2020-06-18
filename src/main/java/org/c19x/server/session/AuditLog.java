@@ -8,13 +8,12 @@ import java.util.Date;
 
 import org.c19x.util.Logger;
 
-public class AuditLogWriter implements AutoCloseable {
-	private final static String tag = AuditLogWriter.class.getName();
-	public final static AuditLogWriter shared = new AuditLogWriter(new File("config/audit.txt"));
+public class AuditLog implements AutoCloseable {
+	private final static String tag = AuditLog.class.getName();
 	private final static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSSS");
 	private PrintWriter log;
 
-	public AuditLogWriter(File file) {
+	public AuditLog(File file) {
 		try {
 			log = new PrintWriter(new FileOutputStream(file, true), true);
 		} catch (Throwable e) {
@@ -23,27 +22,27 @@ public class AuditLogWriter implements AutoCloseable {
 	}
 
 	public void logIn(String userName, boolean success) {
-		write("logIn", "user=" + userName, "success=" + success);
+		log("logIn", "user=" + userName, "success=" + success);
 	}
 
 	public void logOut(Session session, boolean success) {
-		write("logOut", "user=" + session.user.name, "success=" + success);
+		log("logOut", "user=" + session.user.name, "success=" + success);
 	}
 
 	public void changePassword(String userName, boolean success) {
-		write("changePassword", "user=" + userName, "success=" + success);
+		log("changePassword", "user=" + userName, "success=" + success);
 	}
 
-	private synchronized void write(String event, String... values) {
+	public synchronized void log(String event, String... values) {
 		final String timestamp = simpleDateFormat.format(new Date());
 		final String entry = timestamp + "\t" + event + "\t" + String.join(";", values);
-		Logger.info(tag, "{}", entry);
+		Logger.info(tag, "Log (entry={})", entry);
 		log.println(entry);
 		log.flush();
 	}
 
 	@Override
-	public void close() throws Exception {
+	public void close() {
 		log.flush();
 		log.close();
 	}

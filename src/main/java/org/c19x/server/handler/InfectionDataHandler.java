@@ -18,7 +18,7 @@ public class InfectionDataHandler extends AbstractHandler {
 
 	public synchronized void set(final InfectionData infectionData) {
 		this.data = infectionData.toJSON();
-		Logger.info(tag, "Updated (data={})", data);
+		Logger.info(tag, "Updated (dataSize={})", data.length());
 	}
 
 	private synchronized String get() {

@@ -22,6 +22,9 @@ import org.c19x.server.handler.RegistrationHandler;
 import org.c19x.server.handler.StatusHandler;
 import org.c19x.server.handler.TimeHandler;
 import org.c19x.server.handler.WebHandler;
+import org.c19x.server.session.AuditLog;
+import org.c19x.server.session.SessionHandler;
+import org.c19x.server.session.SessionManager;
 import org.c19x.util.FileUtil;
 import org.c19x.util.Logger;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -143,27 +146,38 @@ public class C19XHttpsServer {
 		final File p12KeystoreFile = new File(args[1]);
 		final File keystorePasswordFile = new File(args[2]);
 		final File parametersFile = new File(args[3]);
-		final File databaseFolder = new File(args[4]);
-		final File webFolder = new File(args[5]);
+		final File auditLogFile = new File(args[4]);
+		final File usersFile = new File(args[5]);
+		final File databaseFolder = new File(args[6]);
+		final File webFolder = new File(args[7]);
+		final File webAdminFolder = new File(args[8]);
 
+		final AuditLog auditLog = new AuditLog(auditLogFile);
+		final SessionManager sessionManager = new SessionManager(auditLog, usersFile);
 		final Devices devices = new Devices(databaseFolder);
 		final Parameters parameters = new Parameters(parametersFile);
 
 		final C19XHttpsServer server = new C19XHttpsServer(port, p12KeystoreFile, keystorePasswordFile);
+
+		final SessionHandler sessionHandler = new SessionHandler(sessionManager);
 		final ParametersHandler parametersHandler = new ParametersHandler();
 		final InfectionDataHandler infectionDataHandler = new InfectionDataHandler();
-		final ControlHandler controlHandler = new ControlHandler(devices, parameters, infectionDataHandler);
+		final ControlHandler controlHandler = new ControlHandler(sessionManager, auditLog, devices, parameters,
+				infectionDataHandler);
+
 		final AtomicReference<Timer> updateTimer = new AtomicReference<>(
 				updateTimer(devices, parameters, infectionDataHandler));
 
 		server.getHandlers().put("", new WebHandler(webFolder));
+		server.getHandlers().put("admin", new WebHandler(webAdminFolder));
 		server.getHandlers().put("time", new TimeHandler());
 		server.getHandlers().put("registration", new RegistrationHandler(devices));
 		server.getHandlers().put("status", new StatusHandler(devices));
 		server.getHandlers().put("message", new MessageHandler(devices));
 		server.getHandlers().put("infectionData", infectionDataHandler);
 		server.getHandlers().put("parameters", parametersHandler);
-		server.getHandlers().put("control", controlHandler);
+		server.getHandlers().put("admin/control", controlHandler);
+		server.getHandlers().put("admin/session", sessionHandler);
 
 		FileUtil.onChange(parametersFile, json -> {
 			parameters.fromJSON(json);
@@ -172,7 +186,14 @@ public class C19XHttpsServer {
 			updateTimer.set(updateTimer(devices, parameters, infectionDataHandler));
 		});
 
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				auditLog.close();
+			}
+		});
 		server.start();
+
 	}
 
 	private final static Timer updateTimer(final Devices devices, final Parameters parameters,

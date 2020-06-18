@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -15,18 +16,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.c19x.util.Logger;
 
 public class SessionManager {
-	private final static Logger logger = LoggerFactory.getLogger(SessionManager.class);
-	public final static SessionManager shared = new SessionManager(new File("config/users.txt"));
-
+	private final static String tag = SessionManager.class.getName();
 	private final static int secureRandomSeedSize = 2048;
 	private final static int sessionTokenSize = 32;
 	private final static int sessionIdleExpiryMillis = 30 * 60 * 1000; // 30 minutes
 	private final static int sessionLoginDelayMillis = 1000;
 
+	private final AuditLog auditLog;
 	private final File usersFile;
 	private int usersFileLastHash = 0;
 	private final Map<String, Session> sessions = new HashMap<>();
@@ -34,14 +33,14 @@ public class SessionManager {
 	private final Map<String, Integer> userDelays = new HashMap<>();
 	private final SecureRandom secureRandom;
 
-	public SessionManager(final File usersFile) {
-		logger.debug("Seeding session manager");
+	public SessionManager(final AuditLog auditLog, final File usersFile) {
+		this.auditLog = auditLog;
+		this.usersFile = usersFile;
+		Logger.debug(tag, "Seeding session manager");
 		final byte[] seed = new byte[secureRandomSeedSize];
 		(new SecureRandom()).nextBytes(seed);
 		this.secureRandom = new SecureRandom(seed);
-		logger.debug("Session manager ready");
-
-		this.usersFile = usersFile;
+		Logger.debug(tag, "Session manager ready");
 	}
 
 	private final static String sha256(String string) {
@@ -57,34 +56,34 @@ public class SessionManager {
 			}
 			return hexString.toString();
 		} catch (NoSuchAlgorithmException e) {
-			logger.error("SHA256 failed", e);
+			Logger.error(tag, "SHA256 failed", e);
 			return "";
 		}
 	}
 
-	public boolean addUser(final String userName, final String password) {
+	private boolean addUser(final String userName, final String password) {
 		loadUsers();
 		if (!users.containsKey(userName)) {
-			final String entry = userName + "\t" + password + "\n";
+			final String entry = userName + "\t" + sha256(password) + "\n";
 			try (final BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(usersFile, true))) {
 				bufferedWriter.write(entry);
 				bufferedWriter.close();
 				usersFileLastHash = 0;
-				logger.info("Add user completed successfully (name={},file={})", userName, usersFile);
+				Logger.info(tag, "Add user completed successfully (name={},file={})", userName, usersFile);
 				return true;
 			} catch (Exception e) {
-				logger.error("Add user failed due to exception (name={},file={})", userName, usersFile, e);
+				Logger.error(tag, "Add user failed due to exception (name={},file={})", userName, usersFile, e);
 				return false;
 			}
 		} else {
-			logger.error("Add user failed as user already exists (name={},file={})", userName, usersFile);
+			Logger.error(tag, "Add user failed as user already exists (name={},file={})", userName, usersFile);
 			return false;
 		}
 	}
 
 	public boolean removeUser(final String userName, final String password) {
 		loadUsers();
-		if (users.containsKey(userName) && users.get(userName).hashOfPassword.equals(password)) {
+		if (users.containsKey(userName) && users.get(userName).hashOfPassword.equals(sha256(password))) {
 			final File newUsersFile = new File(usersFile.getParentFile(), usersFile.getName() + ".tmp");
 			boolean userWasRemoved = false;
 			try (final BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(newUsersFile, true))) {
@@ -99,15 +98,15 @@ public class SessionManager {
 				bufferedWriter.close();
 				usersFile.delete();
 				newUsersFile.renameTo(usersFile);
-				logger.info("Remove user completed successfully (name={},file={})", userName, usersFile);
+				Logger.info(tag, "Remove user completed successfully (name={},file={})", userName, usersFile);
 				usersFileLastHash = 0;
 				return userWasRemoved;
 			} catch (Exception e) {
-				logger.error("Remove user failed due to exception (name={},file={})", userName, usersFile, e);
+				Logger.error(tag, "Remove user failed due to exception (name={},file={})", userName, usersFile, e);
 				return false;
 			}
 		} else {
-			logger.info("Remove user failed as user does not exist (name={},file={})", userName, usersFile);
+			Logger.error(tag, "Remove user failed as user does not exist (name={},file={})", userName, usersFile);
 			return false;
 		}
 	}
@@ -117,7 +116,7 @@ public class SessionManager {
 			final List<String> lines = Files.readAllLines(usersFile.toPath());
 			final int hash = String.join("\n", lines).hashCode();
 			if (hash != usersFileLastHash) {
-				logger.debug("Loading users (file={},changed=true,hash={},lastHash={})", usersFile, hash,
+				Logger.debug(tag, "Loading users (file={},changed=true,hash={},lastHash={})", usersFile, hash,
 						usersFileLastHash);
 				final Set<User> accounts = new HashSet<>();
 				Files.readAllLines(usersFile.toPath()).iterator().forEachRemaining(line -> {
@@ -139,14 +138,16 @@ public class SessionManager {
 				});
 				users.clear();
 				accounts.forEach(user -> users.put(user.name, user));
-				logger.debug("Loaded users (file={},accounts={})", usersFile, accounts.size());
+				Logger.debug(tag, "Loaded users (file={},accounts={})", usersFile, accounts.size());
 				usersFileLastHash = hash;
 			} else {
-				logger.debug("Load users skipped (file={},changed=false,hash={},lastHash={})", usersFile, hash,
+				Logger.debug(tag, "Load users skipped (file={},changed=false,hash={},lastHash={})", usersFile, hash,
 						usersFileLastHash);
 			}
+		} catch (NoSuchFileException e) {
+			Logger.error(tag, "Users file does not exist (file={})", usersFile);
 		} catch (Exception e) {
-			logger.error("Failed to read users file (file={})", usersFile, e);
+			Logger.error(tag, "Failed to read users file (file={})", usersFile, e);
 		}
 	}
 
@@ -158,7 +159,7 @@ public class SessionManager {
 	 * @return
 	 */
 	public Session logIn(final String userName, final String hashOfPassword) {
-		logger.debug("Log in request (userName={},hashOfPassword={})", userName, hashOfPassword);
+		Logger.debug(tag, "Log in request (userName={},hashOfPassword={})", userName, hashOfPassword);
 		loadUsers();
 		final User user = users.get(userName);
 		if (user != null) {
@@ -169,25 +170,25 @@ public class SessionManager {
 				final Session session = new Session(user, token, startTime, expiryTime);
 				sessions.put(token, session);
 				userDelays.remove(userName);
-				logger.debug("Log in successful (userName={},token={})", userName, token);
-				AuditLogWriter.shared.logIn(userName, true);
+				Logger.debug(tag, "Log in successful (userName={},token={})", userName, token);
+				auditLog.logIn(userName, true);
 				return session;
 			} else {
-				logger.debug("Log in failed, incorrect password (userName={})", userName);
-				AuditLogWriter.shared.logIn(userName, false);
+				Logger.debug(tag, "Log in failed, incorrect password (userName={})", userName);
+				auditLog.logIn(userName, false);
 				if (!userDelays.containsKey(userName)) {
 					userDelays.put(userName, sessionLoginDelayMillis);
 				} else {
 					userDelays.put(userName, userDelays.get(userName) * 2);
 				}
 				try {
-					logger.debug("Log in retry delay (userName={},delay={})", userName, userDelays.get(userName));
+					Logger.debug(tag, "Log in retry delay (userName={},delay={})", userName, userDelays.get(userName));
 					Thread.sleep(userDelays.get(userName));
 				} catch (InterruptedException e) {
 				}
 			}
 		}
-		logger.debug("Log in failed, unknown user (userName={})", userName);
+		Logger.debug(tag, "Log in failed, unknown user (userName={})", userName);
 		return null;
 	}
 
@@ -199,7 +200,7 @@ public class SessionManager {
 	 */
 	public Session logOut(final String token) {
 		final Session session = sessions.remove(token);
-		AuditLogWriter.shared.logOut(session, false);
+		auditLog.logOut(session, false);
 		session.expiryTime = 0;
 		return session;
 	}
@@ -218,7 +219,7 @@ public class SessionManager {
 		if (removeUser(userName, hashOfPassword)) {
 			result = addUser(userName, hashOfNewPassword);
 		}
-		AuditLogWriter.shared.changePassword(userName, result);
+		auditLog.changePassword(userName, result);
 		return result;
 	}
 
@@ -237,7 +238,7 @@ public class SessionManager {
 				return session;
 			} else {
 				sessions.remove(token);
-				AuditLogWriter.shared.logOut(session, true);
+				auditLog.logOut(session, true);
 				session.expiryTime = 0;
 			}
 		}
@@ -256,5 +257,27 @@ public class SessionManager {
 			tokenBuilder.append(secureRandom.nextInt(10));
 		}
 		return tokenBuilder.toString();
+	}
+
+	public final static void main(String[] args) {
+		try {
+			final File usersFile = new File(args[0]);
+			final String function = args[1].toLowerCase();
+			final String userName = args[2];
+			final String password = args[3];
+			final SessionManager sessionManager = new SessionManager(null, usersFile);
+			switch (function) {
+			case "add":
+				System.out.println("add=" + sessionManager.addUser(userName, password));
+				break;
+			case "remove":
+				System.out.println("remove=" + sessionManager.removeUser(userName, password));
+				break;
+			}
+		} catch (ArrayIndexOutOfBoundsException e) {
+			System.err.println("Usage : <usersFile> <add|remove> <userName> <password>");
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
 	}
 }

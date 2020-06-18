@@ -18,7 +18,6 @@ import org.c19x.util.SecurityUtil;
  *
  */
 public class Devices {
-	@SuppressWarnings("unused")
 	private final static String tag = Devices.class.getName();
 	private final static int sharedSecretLength = 32;
 	private final KeyValueStore parameters;
@@ -61,7 +60,7 @@ public class Devices {
 		});
 	}
 
-	private void unregister(final String serialNumber) {
+	public void unregister(final String serialNumber) {
 		registrations.remove(serialNumber);
 		statuses.remove(serialNumber);
 		messages.remove(serialNumber);

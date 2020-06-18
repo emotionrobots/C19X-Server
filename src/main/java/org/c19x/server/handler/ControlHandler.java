@@ -12,6 +12,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.c19x.server.data.Devices;
 import org.c19x.server.data.InfectionData;
 import org.c19x.server.data.Parameters;
+import org.c19x.server.session.AuditLog;
+import org.c19x.server.session.Session;
+import org.c19x.server.session.SessionManager;
 import org.c19x.util.Logger;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -26,21 +29,25 @@ public class ControlHandler extends AbstractHandler {
 			+ "============================\n\n"
 			+ "GET /control\n"
 			+ "Display this help message.\n\n"
-			+ "GET /control?command=list&password=[passwordHashBase64]\n"
+			+ "GET /control?command=list&token=[token]\n"
 			+ "List all registered devices, contact pattern and status.\n\n"
-			+ "GET /control?command=status&serialNumber=[serialNumber]&status=[statusRawValue]&password=[passwordHashBase64]\n"
+			+ "GET /control?command=status&serialNumber=[serialNumber]&status=[statusRawValue]&token=[token]\n"
 			+ "Set status of registered device with [serialNumber] to [statusRawValue].\n\n"
-			+ "GET /control?command=message&serialNumber=[serialNumber]&message=[message]&password=[passwordHashBase64]\n"
+			+ "GET /control?command=message&serialNumber=[serialNumber]&message=[message]&token=[token]\n"
 			+ "Set message for registered device with [serialNumber] to [message].\n\n"
-			+ "GET /control?command=infectionData&password=[passwordHashBase64]\n"
+			+ "GET /control?command=infectionData&token=[token]\n"
 			+ "Update infection data immediately.";
 	// @formatter:on
+	private final SessionManager sessionManager;
+	private final AuditLog auditLog;
 	private final Devices devices;
 	private final Parameters parameters;
 	private final InfectionDataHandler infectionDataHandler;
 
-	public ControlHandler(final Devices devices, final Parameters parameters,
-			final InfectionDataHandler infectionDataHandler) {
+	public ControlHandler(final SessionManager sessionManager, final AuditLog auditLog, final Devices devices,
+			final Parameters parameters, final InfectionDataHandler infectionDataHandler) {
+		this.sessionManager = sessionManager;
+		this.auditLog = auditLog;
 		this.devices = devices;
 		this.parameters = parameters;
 
@@ -61,23 +68,32 @@ public class ControlHandler extends AbstractHandler {
 				printWriter.close();
 				Logger.debug(tag, "Help");
 			} else {
-				final String passwordHashBase64 = request.getParameter("password");
-				if (!parameters.getPasswordHashBase64().equals(passwordHashBase64)) {
+				final String token = request.getParameter("token");
+				final Session session = sessionManager.isAuthorised(token);
+				if (session == null) {
 					response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-					Logger.debug(tag, "Unauthorised (address={},password={})", request.getRemoteAddr(),
-							passwordHashBase64);
+					Logger.debug(tag, "Unauthorised (address={})", request.getRemoteAddr().hashCode());
 				} else {
 					switch (command) {
 					case "infectionData": {
 						final InfectionData infectionData = new InfectionData(devices, parameters);
 						infectionDataHandler.set(infectionData);
-						response.setContentType("application/json");
-						response.setCharacterEncoding("UTF-8");
-						final PrintWriter printWriter = response.getWriter();
-						printWriter.write(infectionData.toJSON());
-						printWriter.flush();
-						printWriter.close();
+//						response.setContentType("application/json");
+//						response.setCharacterEncoding("UTF-8");
+//						final PrintWriter printWriter = response.getWriter();
+//						printWriter.write(infectionData.toJSON());
+//						printWriter.flush();
+//						printWriter.close();
 						Logger.debug(tag, "Updated infection data");
+						auditLog.log("control", "function=infectionData", "user=" + session.user.name);
+						break;
+					}
+					case "unregister": {
+						final String serialNumber = request.getParameter("serialNumber");
+						devices.unregister(serialNumber);
+						Logger.debug(tag, "Unregister (serialNumber={})", serialNumber);
+						auditLog.log("control", "function=unregister", "user=" + session.user.name,
+								"serialNumber=" + serialNumber);
 						break;
 					}
 					case "status": {
@@ -85,6 +101,8 @@ public class ControlHandler extends AbstractHandler {
 						final String status = request.getParameter("status");
 						devices.setStatus(serialNumber, status);
 						Logger.debug(tag, "Set status (serialNumber={},status={})", serialNumber, status);
+						auditLog.log("control", "function=status", "user=" + session.user.name,
+								"serialNumber=" + serialNumber);
 						break;
 					}
 					case "message": {
@@ -92,6 +110,8 @@ public class ControlHandler extends AbstractHandler {
 						final String message = request.getParameter("message");
 						devices.setMessage(serialNumber, message);
 						Logger.debug(tag, "Set message (serialNumber={},message={})", serialNumber, message);
+						auditLog.log("control", "function=message", "user=" + session.user.name,
+								"serialNumber=" + serialNumber, "messageHash=" + message.hashCode());
 						break;
 					}
 					case "list": {
@@ -103,6 +123,7 @@ public class ControlHandler extends AbstractHandler {
 						printWriter.flush();
 						printWriter.close();
 						Logger.debug(tag, "Listed devices");
+						auditLog.log("control", "function=list", "user=" + session.user.name);
 						break;
 					}
 					case "summary": {
@@ -114,10 +135,12 @@ public class ControlHandler extends AbstractHandler {
 						printWriter.flush();
 						printWriter.close();
 						Logger.debug(tag, "Summary");
+						auditLog.log("control", "function=summary", "user=" + session.user.name);
 						break;
 					}
 					default: {
 						Logger.warn(tag, "Unknown command (address={},command={})", request.getRemoteAddr(), command);
+						auditLog.log("control", "function=unknown", "user=" + session.user.name, "command=" + command);
 					}
 					}
 					response.setStatus(HttpServletResponse.SC_OK);

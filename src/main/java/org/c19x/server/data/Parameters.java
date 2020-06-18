@@ -2,8 +2,6 @@ package org.c19x.server.data;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.security.MessageDigest;
-import java.util.Base64;
 
 import org.c19x.util.Logger;
 import org.json.simple.JSONObject;
@@ -27,8 +25,6 @@ public class Parameters {
 	// 1 = Stay at home
 	// 2 = Self-isolation
 	protected int advice = 1;
-	// Admin password hash
-	protected String passwordHashBase64 = "";
 	// Infection data update delay in minutes
 	protected int update = 24 * 60;
 	// Symptomatic report expiry in days to discount report from infection report
@@ -82,11 +78,6 @@ public class Parameters {
 				proximity = Integer.parseInt((String) j.getOrDefault("proximity", Integer.toString(proximity)));
 				exposure = Integer.parseInt((String) j.getOrDefault("exposure", Integer.toString(exposure)));
 				// Server parameters
-				final String password = (String) j.getOrDefault("password", "");
-				final MessageDigest sha = MessageDigest.getInstance("SHA-256");
-				final byte[] passwordHash = sha.digest(password.getBytes());
-				passwordHashBase64 = Base64.getEncoder().encodeToString(passwordHash).replace("=", "");
-				Logger.warn(tag, "Control password {}", passwordHashBase64);
 				update = Integer.parseInt((String) j.getOrDefault("update", Integer.toString(update)));
 				expireSymptomatic = Integer
 						.parseInt((String) j.getOrDefault("expireSymptomatic", Integer.toString(update)));
@@ -118,10 +109,6 @@ public class Parameters {
 
 	public int getExposure() {
 		return exposure;
-	}
-
-	public String getPasswordHashBase64() {
-		return passwordHashBase64;
 	}
 
 	public int getUpdate() {
